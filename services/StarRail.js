@@ -8,7 +8,6 @@ module.exports = class StarRail {
 
   constructor() {
     this.#_instance = axios.create({
-      method: "GET",
       baseURL: "https://honkai.gg/codes",
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 OPR/97.0.0.0"
@@ -18,7 +17,7 @@ module.exports = class StarRail {
 
   async response() {
     try {
-      const { data } = await this.#_instance()
+      const { data } = await this.#_instance.get()
       const $ = cheerio.load(data);
       return $;
 
@@ -39,7 +38,6 @@ module.exports = class StarRail {
 
       coupons.push({ coupon, reward, duration });
     });
-
     return coupons;
   };
 
@@ -49,18 +47,29 @@ module.exports = class StarRail {
     let coupon = [];
     let reward = [];
     let duration = [];
-    
+
     coupons.forEach(cp => {
 
-      const date = cp.duration.split(" ");
-      const format = moment(date[3] + "-" + date[0] + "-" + moment().year(), 'DD-MMM-YYYY');
+      let date = cp.duration.split(" ");
 
+      let day = date[3];
+      let month = date[0];
+      let year = moment().year();
+
+      if (day == "?") {
+        year = year + 1;
+      } else if (isNaN(parseInt(day))) {
+        day = date[4];
+        month = date[3];
+      };
+
+      const format = moment(`${day}-${month}-${year}`, 'DD MMM YYYY');
       if (format.isValid() && !format.isSameOrBefore(moment(), 'day') || cp.duration.length == 0) {
         coupon.push(cp.coupon);
         reward.push(cp.reward);
-        duration.push(cp.duration || "--/--"); 
+        duration.push(cp.duration || "??/?? - ??/??");
       };
-    });    
+    });
 
     if (coupon.length == 0 && reward.length == 0) throw new Error("No coupons currently available.");
 
