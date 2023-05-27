@@ -1,6 +1,5 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
-const moment = require("moment");
 
 module.exports = class StarRail {
 
@@ -8,9 +7,9 @@ module.exports = class StarRail {
 
   constructor() {
     this.#_instance = axios.create({
-      baseURL: "https://honkai.gg/codes",
+      baseURL: "https://honkai-star-rail.fandom.com/wiki/Redemption_Code",
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 OPR/97.0.0.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 OPR/98.0.0.0"
       }
     });
   }
@@ -29,54 +28,24 @@ module.exports = class StarRail {
   async coupons() {
 
     const $ = await this.response();
-    const coupons = [];
 
-    $('table tbody tr').each((_, e) => {
-      const coupon = $(e).find('td:nth-child(1)').text();
-      const reward = $(e).find('td:nth-child(2)').text();
-      const duration = $(e).find('td:nth-child(3)').text();
+    let coupons = [];
+    let rewards = [];
+    let durations = [];
 
-      coupons.push({ coupon, reward, duration });
-    });
-    return coupons;
-  };
-
-  async getCoupons() {
-    const coupons = await this.coupons();
-
-    let coupon = [];
-    let reward = [];
-    let duration = [];
-
-    coupons.forEach(cp => {
-
-      let date = cp.duration.split(" ");
-
-      let day = date[3];
-      let month = date[0];
-      let year = moment().year();
-
-      if (day == "?") {
-        year = year + 1;
-      } else if (isNaN(parseInt(day))) {
-        day = date[4];
-        month = date[3];
-      };
-
-      const format = moment(`${day}-${month}-${year}`, 'DD MMM YYYY');
-      if (format.isValid() && !format.isSameOrBefore(moment(), 'day') || cp.duration.length == 0) {
-        coupon.push(cp.coupon);
-        reward.push(cp.reward);
-        duration.push(cp.duration || "??/?? - ??/??");
-      };
+    const activeCodes = $('h2 span#Active_Codes').parent().next('table').find('tbody tr');
+    activeCodes.each((_, e) => {
+      coupons.push($(e).find('td:nth-child(1)').text().trim());
+      rewards.push($(e).find('td:nth-child(3)').text().trim());
+      durations.push($(e).find('td:nth-child(4)').text().trim());
     });
 
-    if (coupon.length == 0 && reward.length == 0) throw new Error("No coupons currently available.");
+    if (coupons.length === 0) throw new Error("No coupons currently available.");
 
     return {
-      coupon: coupon.join("\n"),
-      reward: reward.join("\n\n"),
-      duration: duration.join("\n")
+      coupon: coupons.join("\n"),
+      reward: rewards.join("\n"),
+      duration: durations.join("\n")
     };
   };
-};
+}
